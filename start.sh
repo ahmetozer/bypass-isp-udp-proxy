@@ -34,11 +34,12 @@ if [ "$latestCont" == "" ]; then
 fi
 serviceID=${serviceID-$((${latestCont} + 1))}
 serviceNet=${serviceNet-"10.0.9"}
-container_id=$(docker run -it -d --rm --privileged --name "bispudp$serviceID" ahmetozer/bypass-isp-udp-proxy)
+container_id=$(docker run -it -d --rm --privileged -e ipv4_port="$ipv4_port" -e ipv4_dst="$ipv4_dst" --name "bispudp$serviceID" ahmetozer/bypass-isp-udp-proxy)
 if [ "$?" != "0" ]; then
     echo "Error while creating bispudp$serviceID "
     exit 1
 fi
+#docker attach "$container_id" &
 NSPID=$(docker inspect --format='{{ .State.Pid }}' "$container_id")
 
 echo -e "

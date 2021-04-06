@@ -27,7 +27,7 @@ def main():
     # Mirror port IPv4
     ipv4_port = os.environ.get('ipv4_port')
 
-    if ipv4_port == None:
+    if ipv4_port == None or ipv4_port == "":
         print("IPv4 port is not found, it will be randomly generated.")
 
         def ipv4_port_func():
@@ -51,7 +51,7 @@ def main():
     # Mirror addr IPv4
     ipv4_dst = os.environ.get('ipv4_dst')
 
-    if ipv4_dst == None:
+    if ipv4_dst == None or ipv4_dst == "":
         print("ipv4_dst is not defined. The fake packet destinatination address will be the same as the original.")
     else:
         try:
