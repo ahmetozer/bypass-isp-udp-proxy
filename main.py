@@ -53,6 +53,7 @@ def main():
 
     if ipv4_dst == None or ipv4_dst == "":
         print("ipv4_dst is not defined. The fake packet destinatination address will be the same as the original.")
+        ipv4_dst = None
     else:
         try:
             socket.inet_aton(ipv4_dst)
@@ -80,6 +81,16 @@ def main():
             time.sleep(1)
             if check_interface("pm1"):
                 break
+
+    if check_interface("eth0") == True:
+        print("Waiting eth0 interface")
+        while True:
+            time.sleep(1)
+            if check_interface("eth0") == False:
+                break
+    
+    conf.route.resync()
+    print("Route Updated")
 
     def send_packetIPv4(pkt):
         if IP in pkt:

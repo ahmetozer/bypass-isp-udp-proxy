@@ -15,19 +15,21 @@ error() {
 }
 
 exit_function() {
+    echo "Exiting..."
     if [ "$EXIT_ON_ERR" != "false" ]; then
         # Restore and clean
         echo -e "\nKilling the docker container "
-        docker kill ${container_id}
+        docker kill ${container_id} 2> /dev/null
         if [ "$STAT_IP_RULE_FWMARK" == "true" ]; then
             echo "Cleaning ip rule"
             ip rule del table "$((${serviceID} + 400))"
         fi
     fi
+    echo "Good BYE"
 }
 
 trap 'error ${LINENO} ' ERR
-trap 'exit_function' EXIT
+trap 'exit_function' EXIT INT
 latestCont=$(docker ps -a --filter "name=bispudp" --format {{.Names}} | cut -c8- | sort -n -r | head -1)
 if [ "$latestCont" == "" ]; then
     latestCont=0
@@ -46,8 +48,8 @@ echo -e "
 FWMARK=$((${serviceID} + 400)) and Table=$((${serviceID} + 400))
 container name bispudp$serviceID
 container id $(echo $container_id | cut -c1-12)
-container in interface  pm-in${serviceID} ${serviceNet}.$((${serviceID} * 4 - 3))
-container out interface pm-out${serviceID} ${serviceNet}.$((${serviceID} * 4 - 1))
+container in interface\tpm-in${serviceID} ${serviceNet}.$((${serviceID} * 4 - 3)) \t-->\tpm0 ${serviceNet}.$((${serviceID} * 4 - 2))
+container out interface\tpm-out${serviceID} ${serviceNet}.$((${serviceID} * 4 - 1))\t<--\tpm1 ${serviceNet}.$((${serviceID} * 4 ))
 "
 if [ $? -eq 0 ]; then
 
@@ -68,37 +70,37 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    ip addr add "${serviceNet}.$((${serviceID} * 4 - 3))/32" dev "pm-in$((${serviceID}))"
+    ip addr add "${serviceNet}.$((${serviceID} * 4 - 3))/32" dev "pm-in$((${serviceID}))" > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm-in$((${serviceID})) address allocation"
         exit 1
     fi
 
-    ip ro add "${serviceNet}.$((${serviceID} * 4 - 2))/32" dev "pm-in$((${serviceID}))"
+    ip ro add "${serviceNet}.$((${serviceID} * 4 - 2))/32" dev "pm-in$((${serviceID}))" > /dev/null
     if [ $? != 0 ]; then
         echo "error while route setting  ${serviceNet}.$((${serviceID} * 4 - 3))/32 dev pm-in$((${serviceID}))"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip link set pm0 up
+    docker exec -it --privileged "$container_id" ip link set pm0 up > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm0 up in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip addr add "${serviceNet}.$((${serviceID} * 4 - 2))/32" dev pm0
+    docker exec -it --privileged "$container_id" ip addr add "${serviceNet}.$((${serviceID} * 4 - 2))/32" dev pm0 > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm0 address allocation in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip ro add "${serviceNet}.$((${serviceID} * 4 - 3))" dev pm0
+    docker exec -it --privileged "$container_id" ip ro add "${serviceNet}.$((${serviceID} * 4 - 3))" dev pm0 > /dev/null
     if [ $? != 0 ]; then
         echo "error while route setting in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" sysctl -w net.ipv4.ip_forward=0
+    docker exec -it --privileged "$container_id" sysctl -w net.ipv4.ip_forward=0 > /dev/null
     if [ $? != 0 ]; then
         echo "error while disabling ip forward $(echo $container_id | cut -c1-12)"
         exit 1
@@ -121,7 +123,7 @@ if [ $? -eq 0 ]; then
     # Output interface
     ###
 
-    ip link add "pm-out$((${serviceID}))" type veth peer pm1 netns "$NSPID"
+    ip link add "pm-out$((${serviceID}))" type veth peer pm1 netns "$NSPID" > /dev/null
     if [ $? != 0 ]; then
         echo "error while creating pm-out$((${serviceID}))"
         exit 1
@@ -133,31 +135,31 @@ if [ $? -eq 0 ]; then
         exit 1
     fi
 
-    ip addr add "${serviceNet}.$((${serviceID} * 4 - 1))/32" dev "pm-out$((${serviceID}))"
+    ip addr add "${serviceNet}.$((${serviceID} * 4 - 1))/32" dev "pm-out$((${serviceID}))" > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm-out$((${serviceID})) address allocation"
         exit 1
     fi
 
-    ip ro add "${serviceNet}.$((${serviceID} * 4))/32" dev "pm-out$((${serviceID}))"
+    ip ro add "${serviceNet}.$((${serviceID} * 4))/32" dev "pm-out$((${serviceID}))" > /dev/null
     if [ $? != 0 ]; then
         echo "error while route setting  ${serviceNet}.$((${serviceID}))/32 dev pm-out$((${serviceID}))"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip link set pm1 up
+    docker exec -it --privileged "$container_id" ip link set pm1 up > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm0 up in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip addr add "${serviceNet}.$((${serviceID} * 4))/32" dev pm1
+    docker exec -it --privileged "$container_id" ip addr add "${serviceNet}.$((${serviceID} * 4))/32" dev pm1 > /dev/null
     if [ $? != 0 ]; then
         echo "error while interface pm0 address allocation in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" ip ro add "${serviceNet}.$((${serviceID} * 4 - 1))" dev pm1
+    docker exec -it --privileged "$container_id" ip ro add "${serviceNet}.$((${serviceID} * 4 - 1))" dev pm1 > /dev/null
     if [ $? != 0 ]; then
         echo "error while route setting in container $(echo $container_id | cut -c1-12)"
         exit 1
@@ -166,20 +168,26 @@ if [ $? -eq 0 ]; then
     ###
     #   Routing
     ###
-    default_route="$(docker exec -it --privileged $container_id bash -c 'ip ro | grep default')"
+    default_route="$(docker exec -it --privileged $container_id bash -c 'ip ro | grep default')" 2> /dev/null
     if [ $? != 0 ]; then
         echo "error while getting default route in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
-    docker exec -it --privileged "$container_id" bash -c "ip ro re default via ${serviceNet}.$((${serviceID} * 4 - 1)) dev pm1"
+    docker exec -it --privileged "$container_id" bash -c "ip ro re default via ${serviceNet}.$((${serviceID} * 4 - 1)) dev pm1" > /dev/null
     if [ $? != 0 ]; then
-        echo "error while change default route in $(echo $container_id | cut -c1-12)"
+        echo "error while change default route in container $(echo $container_id | cut -c1-12)"
+        exit 1
+    fi
+
+    docker exec -it --privileged "$container_id" ip addr flush dev eth0  > /dev/null
+    if [ $? != 0 ]; then
+        echo "error while flushing interface eth0 in container $(echo $container_id | cut -c1-12)"
         exit 1
     fi
 
 fi
 
 echo "System is ready."
-EXIT_ON_ERR="false"
-#docker attach "$container_id"
+#EXIT_ON_ERR="false"
+docker attach "$container_id"
