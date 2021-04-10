@@ -36,7 +36,7 @@ if [ "$latestCont" == "" ]; then
 fi
 serviceID=${serviceID-$((${latestCont} + 1))}
 serviceNet=${serviceNet-"10.0.9"}
-container_id=$(docker run -it -d --rm --privileged -e ipv4_port="$ipv4_port" -e ipv4_dst="$ipv4_dst" --name "bispudp$serviceID" ahmetozer/bypass-isp-udp-proxy)
+container_id=$(docker run -it -d --rm --privileged -e ipv4_port="$ipv4_port" -e ipv4_dst="$ipv4_dst" --name "bispudp$serviceID" ghcr.io/ahmetozer/bypass-isp-udp-proxy:latest)
 if [ "$?" != "0" ]; then
     echo "Error while creating bispudp$serviceID "
     exit 1
@@ -188,6 +188,6 @@ if [ $? -eq 0 ]; then
 
 fi
 
-echo "System is ready."
+echo "Init is done."
 #EXIT_ON_ERR="false"
 docker attach "$container_id"

@@ -90,7 +90,7 @@ def main():
                 break
     
     conf.route.resync()
-    print("Route Updated")
+    print("System is ready.")
 
     def send_packetIPv4(pkt):
         if IP in pkt:
